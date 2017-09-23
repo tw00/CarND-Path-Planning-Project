@@ -244,10 +244,27 @@ int main() {
 			double time_step = 0.02;
 
 			// max speed	
-			double max_velocity = 49.5*2.5;
+			double max_velocity = 49.5;
 
 			// maximum acceleration for breaking and speeding up
-			double max_acceleration = 0.224 * 5;
+			double max_acceleration = 0.45;
+
+			// weights for 
+            double velocity_weight = 1.0;
+            double distance_weight = 2.0;
+
+			// offset for car length
+			double offset_s = -1.0;
+
+			// RACE
+			bool race_mode = false;
+			if( race_mode ) {
+				max_velocity     = 120.0;
+				max_acceleration = 1.2;
+				velocity_weight  = 0.1;
+				distance_weight  = 1.0;
+				offset_s         = -1.0;
+			}
 		
 			// size of previous path points that has not been executed yet
 			int prev_size = previous_path_x.size();
@@ -263,7 +280,6 @@ int main() {
             double center_car_dist = 100.0;
             double left_car_dist   = 100.0;
 			double right_car_dist  = 100.0;
-			double offset_s = -3.0;
 
 			for( int i = 0; i < sensor_fusion.size(); i++ )
 			{
@@ -278,13 +294,11 @@ int main() {
 
 				if( d < (2+4*lane+2) && d > (2+4*lane-2) ) {
 					// check s-Value greater than mine 
-					// if ((other_dist > car_s - offset_s) && ((other_dist - car_s) < 30.0) ) {
 					if ((other_dist > car_s - offset_s) && ((other_dist - car_s) < center_car_dist) ) {		
 						center_car_dist     = other_dist - car_s;
 						center_car_velocity = other_v;
 					}
 				}
-
 				if( d < (2+4*(lane-1)+2) && d > (2+4*(lane-1)-2) && lane > 0 ) {
 					if ((other_dist > car_s - offset_s) && (other_dist - car_s) < left_car_dist) {
 						left_car_dist      = other_dist - car_s;
@@ -300,45 +314,47 @@ int main() {
 			}
 
             // Calculate the cost of each lane
-            double velocity_weight = 300;
-            double distance_weight = 3.0;
-            double center_cost = velocity_weight / center_car_velocity +
-					distance_weight / abs(center_car_dist);
-            double left_cost = velocity_weight / left_car_velocity +
-                    distance_weight / abs(left_car_dist);
-            double right_cost = velocity_weight / right_car_velocity +
-                    distance_weight / abs(right_car_dist);
+            double center_cost = velocity_weight / center_car_velocity + distance_weight / abs(center_car_dist);
+            double left_cost   = velocity_weight / left_car_velocity   + distance_weight / abs(left_car_dist);
+            double right_cost  = velocity_weight / right_car_velocity  + distance_weight / abs(right_car_dist);
+			if( lane == 0 ) left_cost = 999.0;
+			if( lane == 2 ) right_cost = 999.0;
 
             // Change lane if the adjacent lane has lower cost and the ego vehicle is not already changing lane
-            //if (left_cost < center_cost && left_cost < right_cost && car_d < (2+4*lane+2) && car_d > (2+4*lane-2)) {
 			double changing_lane = true;
 			if( car_d < (2+4*lane+2) && car_d > (2+4*lane-2) ) {
 				changing_lane = false;
 			}
 
-            if( left_cost < center_cost && left_cost < right_cost && !changing_lane && lane > 0 ) {
+			// debug print
+			cout << "COST: lane = " << lane << ", L = " << left_cost << ", C = " << center_cost << ", R = " << right_cost << endl;
+
+			// change lanes
+			if( min( left_cost, right_cost) < center_cost && !changing_lane)
+			{
+				// decide to which lane to change
+				if( right_cost < left_cost && lane < 2 )
+					lane += 1;
+				else if( lane > 0 )
+					lane -= 1;
+			}
+
+/*            if( left_cost < center_cost && left_cost < right_cost && !changing_lane && lane > 0 ) {
 				lane -= 1;
             }
             if( right_cost < center_cost && right_cost < left_cost && !changing_lane && lane < 2) {
               	lane += 1;
-			}
-
-            // Slow down signal when the car in front is too close
-	//		bool too_close = false;
-    //        if (center_car_dist < 10) {
-  //          	too_close = true;
-//			}
+			}*/
 
             // Slow down and speed down based on signal in constant acceleration
-            //if (too_close)
-            if( center_car_dist < 15 )
+            if( center_car_dist < (ref_velocity/max_velocity)*50 )
 			{
+				// emergency break
 				if( ref_velocity > center_car_velocity + 10 )
 					ref_velocity -= 2 * max_acceleration;
 					
             	if( ref_velocity > center_car_velocity )
 					ref_velocity -= max_acceleration;
-				
             }
 			else
 			{
