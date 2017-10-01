@@ -250,11 +250,11 @@ int main() {
 			double max_acceleration = 0.45;
 
 			// weights for 
-            double velocity_weight = 1.0;
-            double distance_weight = 2.0;
+            double velocity_weight = 0.20;
+            double distance_weight = 1.00;
 
 			// offset for car length
-			double offset_s = -1.0;
+			double offset_s = 8.0;
 
 			// RACE
 			bool race_mode = false;
@@ -287,13 +287,13 @@ int main() {
 				double other_vx    = sensor_fusion[i][3];
 				double other_vy    = sensor_fusion[i][4];
 				double other_v     = sqrt( other_vx*other_vx + other_vy*other_vy );
-				double other_check = sensor_fusion[i][5]; // s-Value of other car
+				double other_check = sensor_fusion[i][5]; // s-value of other car
 
 				// Predict the distance at the end of previous planning assuming constant velocity
 				double other_dist = (double)other_check + (double)prev_size*time_step*other_v;
 
 				if( d < (2+4*lane+2) && d > (2+4*lane-2) ) {
-					// check s-Value greater than mine 
+					// check s-value greater than mine 
 					if ((other_dist > car_s - offset_s) && ((other_dist - car_s) < center_car_dist) ) {		
 						center_car_dist     = other_dist - car_s;
 						center_car_velocity = other_v;
@@ -317,8 +317,8 @@ int main() {
             double center_cost = velocity_weight / center_car_velocity + distance_weight / abs(center_car_dist);
             double left_cost   = velocity_weight / left_car_velocity   + distance_weight / abs(left_car_dist);
             double right_cost  = velocity_weight / right_car_velocity  + distance_weight / abs(right_car_dist);
-			if( lane == 0 ) left_cost = 999.0;
-			if( lane == 2 ) right_cost = 999.0;
+			if( lane == 0 ) left_cost  = 1.0;
+			if( lane == 2 ) right_cost = 1.0;
 
             // Change lane if the adjacent lane has lower cost and the ego vehicle is not already changing lane
 			double changing_lane = true;
@@ -327,7 +327,7 @@ int main() {
 			}
 
 			// debug print
-			cout << "COST: lane = " << lane << ", L = " << left_cost << ", C = " << center_cost << ", R = " << right_cost << endl;
+			cout << fixed << setprecision(4) << "COST: lane = " << lane << ", L = " << left_cost << ", C = " << center_cost << ", R = " << right_cost << endl;
 
 			// change lanes
 			if( min( left_cost, right_cost) < center_cost && !changing_lane)
@@ -338,13 +338,6 @@ int main() {
 				else if( lane > 0 )
 					lane -= 1;
 			}
-
-/*            if( left_cost < center_cost && left_cost < right_cost && !changing_lane && lane > 0 ) {
-				lane -= 1;
-            }
-            if( right_cost < center_cost && right_cost < left_cost && !changing_lane && lane < 2) {
-              	lane += 1;
-			}*/
 
             // Slow down and speed down based on signal in constant acceleration
             if( center_car_dist < (ref_velocity/max_velocity)*50 )
@@ -516,3 +509,4 @@ int main() {
   }
   h.run();
 }
+
