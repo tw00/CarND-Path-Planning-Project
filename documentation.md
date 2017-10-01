@@ -154,7 +154,7 @@ Finally, a smooth list of waypoints is generated and then send to the simulator.
 
 ### Race mode
 
-I implemented a race mode that will result in a much faster driving. I can be enabled by setting:
+I implemented a race mode that will result in a much faster driving. It can be enabled by setting:
 
 ```c++
 bool race_mode = true;
