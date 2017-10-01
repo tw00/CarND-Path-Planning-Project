@@ -244,10 +244,10 @@ int main() {
             double time_step = 0.02;
 
             // max speed    
-            double max_velocity = 49.5;
+            double max_velocity = 49.2;
 
             // maximum acceleration for breaking and speeding up
-            double max_acceleration = 0.45;
+            double max_acceleration = 0.80;
 
             // weights for 
             double velocity_weight = 0.20;
@@ -320,7 +320,7 @@ int main() {
             if( lane == 0 ) left_cost  = 1.0;
             if( lane == 2 ) right_cost = 1.0;
 
-            // Change lane if the adjacent lane has lower cost and the ego vehicle is not already changing lane
+            // Change lane if the next lane has lower cost and the vehicle is not already changing lanes
             double changing_lane = true;
             if( car_d < (2+4*lane+2) && car_d > (2+4*lane-2) ) {
                 changing_lane = false;
